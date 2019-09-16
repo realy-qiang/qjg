@@ -1,58 +1,11 @@
 # HTTP 和Tornado入门
 
-- 构建在长链接的的基础上的短连接协议
-
-TCP 协议
-
-* 建立连接：三次握手
-
-* 断开连接：四次挥手
-
-* 可靠
-
-* 长连接
-
 ## 一、HTTP 服务器
 
 HTTP 协议是建立在 TCP 协议之上的短连接协议。
 它利用了 TCP 协议的可靠性,用来传输超文本 (HTML),通信一次连接一次,通信完成后 TCP 连接关
 闭。
 所以如果想创建一个 HTTP Server 需要通过 Socket 搭建一个服务端程序。
-
-```tex
-步骤：
-1.导入socket模块
-	import socket
-2.创建socket对象
-	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-3.绑定服务器地址
-	sock.bind('0.0.0.0',8000)
-4.设置监听队列
-	sock.listen(100)
-5.定义'响应报文'
-    html = b'''
-    HTTP/1.1 200 OK
-
-    <html>
-        <head>
-            <title>home</title>
-        </head>
-        <body>
-            Hello world
-        </body>
-    </html>
-    '''
-6.等待接受客户端连接
-	cli_sock, cli_addr = sock.accept()
-    # 第一个返回值是客户端的 socket 对象
-    # 第二个返回值是客户端的地址
-7.接收客户端传来的数据
-	cli_data = cli_sock.recv(1024)
-8.向客户端发送请求
-	cli_sock.sendall(html)
-9.断开与客户端的连接
-	cli_sock.close()
-```
 
 ### 简单的HTTP服务器
 
