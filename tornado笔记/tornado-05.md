@@ -284,4 +284,54 @@ class MsgHandler(tornado.websocket.WebSocketHandler):
           return all_msg
   ```
 
+  ## 元类
   
+  Python中的类也是对象。元类就是用来创建这些类（对象）的，元类就是类的类，你可以这样理解为：
+  
+  ```
+  MyClass = MetaClass()    #元类创建类
+  MyObject = MyClass()     #类创建实例
+  ```
+  
+  实际上MyClass就是通过type()来创创建出MyClass类，它是type()类的一个实例；同时MyClass本身也是类，也可以创建出自己的实例，这里就是MyObject
+  函数type实际上是一个元类。type就是Python在背后用来创建所有类的元类
+
+使用type元类，进行类的创建过程
+
+```python
+In [10]: def drink(self):    # 定义实例方法
+    ...:     print('%s正在喝水' %self.name)
+    ...:     
+
+In [11]: def run(self):
+    ...:     print('%s正在用%d条腿在奔跑' %(self.name, self.legs))
+    ...:     
+
+In [12]: attr = {
+   ...:		# 定义实例属性
+    ...:     'name':'旺财',
+    ...:     'age':1.5,
+    ...:     'head':1,
+    ...:     'body':1,
+    ...:     'legs':4,
+    ...:     'tail':1,
+    ...:     'drink':drink,
+    ...:     'run':run
+    ...: }
+
+In [13]: Dog = type('Dog',(object,),attr)  # 通过type进行类的创建
+
+In [14]: dog = Dog()  # 类的实例化
+
+In [15]: dog.name,dog.age,dog.head,dog.body,dog.legs,dog.tail
+Out[15]: ('旺财', 1.5, 1, 1, 4, 1)
+
+In [16]: dog.drink()
+旺财正在喝水
+
+In [17]: dog.run()
+旺财正在用4条腿在奔跑
+
+In [18]: 
+```
+
