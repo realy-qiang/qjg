@@ -1,4 +1,4 @@
-# `Redis` 与 `MongoDB`
+# `iRedis` 与 `MongoDB`
 
 ## `NoSQL`概述
 
@@ -236,34 +236,22 @@ Redis 是一种基于键值对的NoSQL数据库,它提供了对多种数据类�
 
    ​       这里需要特殊说明一下vm字段，只有打开了Redis的虚拟内存功能，此字段才会真正的分配内存，该功能默认是关闭状态的，该功能会在后面具体描述。通过上图我们可以发现Redis使用redisObject来表示所有的key/value数据是比较浪费内存的，当然这些内存管理成本的付出主要也是为了给Redis不同数据类型提供一个统一的管理接口，实际作者也提供了多种方法帮助我们尽量节省内存使用，我们随后会具体讨论。
 
-    
-
-    
-
-    
-
-   ## 
-
-   各种数据类型应用和实现方式
-
-   下面我们先来逐一的分析下这7种数据类型的使用和内部实现方式:
-
-   ### 
+   
 
    - String:
 
    > Strings 数据结构是简单的key-value类型，value其实不仅是String，也可以是数字.
-   >
+>
    > 常用命令:  set(存储键和值),get(得到键的值),decr(将键的整数值减1),incr(将存储的数字增加1),mget（获取所有给定键的值） 等。
-   >
+>
    >  
-   >
+>
    > **应用场景：**String是最常用的一种数据类型，普通的key/ value 存储都可以归为此类.即可以完全实现目前 Memcached 的功能，并且效率更高。还可以享受Redis的定时持久化，操作日志及 Replication等功能。除了提供与 Memcached 一样的get、set、incr、decr 等操作外，Redis还提供了下面一些操作：
 
     
 
    ```bash
-   localhost:6379> set name qjg
+localhost:6379> set name qjg
    OK
    localhost:6379> get name
    "qjg"
@@ -271,63 +259,63 @@ Redis 是一种基于键值对的NoSQL数据库,它提供了对多种数据类�
    1) "qjg"
    localhost:6379> set age 18
    OK
-   localhost:6379> incr age
+localhost:6379> incr age
    (integer) 19
-   localhost:6379> decr age
+localhost:6379> decr age
    (integer) 18
    localhost:6379> mget name age
    1) "qjg"
    2) "18"
    localhost:6379> 
    ```
-
+   
     
-
+   
    - - 获取字符串长度
-
+   
        `str key`
-
+   
        ```bash
        localhost:6379> strlen name
        (integer) 3
        ```
-
-     - 往字符串append内容
-
-       `append key value`
-
-       ```bash
+   
+  - 往字符串append内容
+   
+    `append key value`
+   
+    ```bash
        localhost:6379> append name 123
-       (integer) 6
+    (integer) 6
        localhost:6379> get name
        "qjg123"
        ```
-
-       
-
-     - 设置和获取字符串的某一段内容
-
-       `getrange key start end`
-
+   
+    
+   
+  - 设置和获取字符串的某一段内容
+   
+    `getrange key start end`
+   
        ```bash
        localhost:6379> getrange name 2 4
        "g12"
        ```
-
-       
-
-     - 设置及获取字符串的某一位（bit）
-
-     - 批量设置一系列字符串的内容
-
-       `mset key value key value`
-
+   
+    
+   
+  - 设置及获取字符串的某一位（bit）
+   
+  - 批量设置一系列字符串的内容
+   
+    `mset key value key value`
+   
        ```bash
        localhost:6379> mset sex 'man' city 'shanghai'
        OK
-       localhost:6379> mget sex city
+    localhost:6379> mget sex city
        1) "man"
-       2) "shanghai"
+    2) "shanghai"
        ```
 
        
@@ -335,25 +323,23 @@ Redis 是一种基于键值对的NoSQL数据库,它提供了对多种数据类�
     
 
    > **实现方式：**String在redis内部存储默认就是一个字符串，被redisObject所引用，当遇到incr,decr等操作时会转成数值型进行计算，此时redisObject的encoding字段为int。
-
-   ### 
-
+   
    - Hash
-
+   
    > **常用命令：**hget,hset,hgetall 等。
    >
    > **应用场景：**在Memcached中，我们经常将一些结构化的信息打包成HashMap，在客户端序列化后存储为一个字符串的值，比如用户的昵称、年龄、性别、积分等，这时候在需要修改其中某一项时，通常需要将所有值取出反序列化后，修改某一项的值，再序列化存储回去。**这样不仅增大了开销，也不适用于一些可能并发操作的场合**（比如两个并发的操作都需要修改积分）。而Redis的Hash结构可以使你像在数据库中Update一个属性一样只修改某一项属性值。
-   >
+>
    > ​        我们简单举个实例来描述下Hash的应用场景，比如我们要存储一个用户信息对象数据，包含以下信息：
-   >
+>
    > 用户ID为查找的key，存储的value用户对象包含姓名，年龄，生日等信息，如果用普通的key/value结构来存储，主要有以下2种存储方式：
-   >
+>
    >  
-   >
+>
    > ![img](images/21184255_tEGU.jpg)
-   >
+>
    > 第一种方式将用户ID作为查找key,把其他信息封装成一个对象以序列化的方式存储，这种方式的缺点是，增加了序列化/反序列化的开销，并且在需要修改其中一项信息时，需要把整个对象取回，并且修改操作需要对并发进行保护，引入CAS等复杂问题。
-   >
+>
    > ![img](images/21184255_5x0G.jpg)
    >
    > 第二种方法是这个用户信息对象有多少成员就存成多少个key-value对儿，用用户ID+对应属性的名称作为唯一标识来取得对应属性的值，虽然省去了序列化开销和并发问题，但是用户ID为重复存储，如果存在大量这样的数据，内存浪费还是非常可观的。
@@ -369,7 +355,7 @@ Redis 是一种基于键值对的NoSQL数据库,它提供了对多种数据类�
    > **实现方式：**
    >
    > 上面已经说到Redis Hash对应Value内部实际就是一个HashMap，实际这里会有2种不同实现，这个Hash的成员比较少时Redis为了节省内存会采用类似一维数组的方式来紧凑存储，而不会采用真正的HashMap结构，对应的value redisObject的encoding为zipmap,当成员数量增大时会自动转成真正的HashMap,此时encoding为ht。
-
+   
    ```bash
    localhost:6379> hset myhash field1 "你好"
    (integer) 1
@@ -380,11 +366,11 @@ Redis 是一种基于键值对的NoSQL数据库,它提供了对多种数据类�
    2) "\xe4\xbd\xa0\xe5\xa5\xbd"
    localhost:6379> 
    ```
-
    
-
-   - List
-
+   
+   
+- List
+   
    > **常用命令：**lpush,rpush,lpop,rpop,lrange等。
    >
    > **应用场景：**
@@ -394,11 +380,11 @@ Redis 是一种基于键值对的NoSQL数据库,它提供了对多种数据类�
    > Lists 就是链表，相信略有数据结构知识的人都应该能理解其结构。使用Lists结构，我们可以轻松地实现最新消息排行等功能。Lists的另一个应用就是消息队列，
    > 可以利用Lists的PUSH操作，将任务存在Lists中，然后工作线程再用POP操作将任务取出进行执行。Redis还提供了操作Lists中某一段的api，你可以直接查询，删除Lists中某一段的元素。
    >
-   > **实现方式：**
+> **实现方式：**
    >
-   > Redis list的实现为一个双向链表，即可以支持反向查找和遍历，更方便操作，不过带来了部分额外的内存开销，Redis内部的很多实现，包括发送缓冲队列等也都是用的这个数据结构。
-
-   ```bash
+> Redis list的实现为一个双向链表，即可以支持反向查找和遍历，更方便操作，不过带来了部分额外的内存开销，Redis内部的很多实现，包括发送缓冲队列等也都是用的这个数据结构。
+   
+```bash
    localhost:6379> lpush runoobkey redis
    (integer) 1
    localhost:6379> lpush runoobkey mongodb
@@ -411,7 +397,7 @@ Redis 是一种基于键值对的NoSQL数据库,它提供了对多种数据类�
    3) "redis"
    localhost:6379> rpush runoobkey sqlserver
    (integer) 4
-   localhost:6379> rpush runoobkey oracle
+localhost:6379> rpush runoobkey oracle
    (integer) 5
    localhost:6379> lrange runoobkey 0 10
    1) "mysql"
@@ -425,9 +411,9 @@ Redis 是一种基于键值对的NoSQL数据库,它提供了对多种数据类�
    "oracle"
    localhost:6379>
    ```
-
+   
    - Set
-
+   
    > **常用命令：**
    >
    > sadd,spop,smembers,sunion 等。
@@ -439,7 +425,7 @@ Redis 是一种基于键值对的NoSQL数据库,它提供了对多种数据类�
    > Sets 集合的概念就是一堆不重复值的组合。利用Redis提供的Sets数据结构，可以存储一些集合性的数据，比如在微博应用中，可以将一个用户所有的关注人存在一个集合中，将其所有粉丝存在一个集合。Redis还为集合提供了求交集、并集、差集等操作，可以非常方便的实现如共同关注、共同喜好、二度好友等功能，对上面的所有集合操作，你还可以使用不同的命令选择将结果返回给客户端还是存集到一个新的集合中。
    >
    > **实现方式：**
-   >
+>
    > set 的内部实现是一个 value永远为null的HashMap，实际就是通过计算hash的方式来快速排重的，这也是set能提供判断一个成员是否在集合内的原因。
 
    ```sql
@@ -455,7 +441,7 @@ Redis 是一种基于键值对的NoSQL数据库,它提供了对多种数据类�
    1) "mongodb"
    2) "mysql"
    3) "redis"
-   localhost:6379> spop setkey 1  -- 删除集合中的指定下标数据
+localhost:6379> spop setkey 1  -- 删除集合中的指定下标数据
    1) "mysql"
    localhost:6379> smembers setkey
    1) "mongodb"
@@ -473,11 +459,11 @@ Redis 是一种基于键值对的NoSQL数据库,它提供了对多种数据类�
    3) "redis"
    localhost:6379>
    ```
-
    
-
+   
+   
    - Sorted Set
-
+   
    > **常用命令：**
    >
    > zadd,zrange,zrem,zcard等
@@ -487,13 +473,13 @@ Redis 是一种基于键值对的NoSQL数据库,它提供了对多种数据类�
    > Redis sorted set的使用场景与set类似，区别是set不是自动有序的，而sorted set可以通过用户额外提供一个优先级(score)的参数来为成员排序，并且是插入有序的，即自动排序。当你需要一个有序的并且不重复的集合列表，那么可以选择sorted set数据结构，比如twitter 的public timeline可以以发表时间作为score来存储，这样获取时就是自动按时间排好序的。
    >
    > 另外还可以用Sorted Sets来做带权重的队列，比如普通消息的score为1，重要消息的score为2，然后工作线程可以选择按score的倒序来获取工作任务。让重要的任务优先执行。
-   >
+>
    > **实现方式：**
-   >
+>
    > Redis sorted set的内部使用HashMap和跳跃表(SkipList)来保证数据的存储和有序，HashMap里放的是成员到score的映射，而跳跃表里存放的是所有的成员，排序依据是HashMap里存的score,使用跳跃表的结构可以获得比较高的查找效率，并且在实现上比较简单。
 
     
-
+   
    ```sql
    localhost:6379> zadd sort_set 1 redis
    (integer) 1
@@ -505,9 +491,9 @@ Redis 是一种基于键值对的NoSQL数据库,它提供了对多种数据类�
    localhost:6379> zadd sort_set 2 mongodb -- 向指定位置插入数据
    (integer) 1
    localhost:6379> zrange sort_set 0 10  -- 查询集合内指定索引范围内的元素
-   1) "redis"
+1) "redis"
    2) "mongodb"
-   3) "mysql"
+3) "mysql"
    localhost:6379> zadd sort_set 2 sqlserver
    (integer) 1
    localhost:6379> zrange sort_set 0 10
@@ -524,56 +510,52 @@ Redis 是一种基于键值对的NoSQL数据库,它提供了对多种数据类�
    localhost:6379> zcard sort_set  -- 返回集合的元素个数
    (integer) 3
    ```
-
    
-
-   ### 
-
+   
+   
    - Pub/Sub
-
+   
     
-
+   
    > Pub/Sub 从字面上理解就是发布（Publish）与订阅（Subscribe），在Redis中，你可以设定对某一个key值进行消息发布及消息订阅，当一个key值上进行了消息发布后，所有订阅它的客户端都会收到相应的消息。这一功能最明显的用法就是用作实时消息系统，比如普通的即时聊天，群聊等功能。
-
+   
     订阅：
-
+   
    ```sql
    localhost:6379> subscribe redisChat
    Reading messages... (press Ctrl-C to quit)
-   1) "subscribe"
+1) "subscribe"
    2) "redisChat"
-   3) (integer) 1
+3) (integer) 1
    ```
 
    在另一个窗口，进行发布
 
    ```sql
-   calhost:6379> publish redisChat "redis is a great caching technique"
+calhost:6379> publish redisChat "redis is a great caching technique"
    (integer) 1
-   ```
-
-   此时订阅的窗口内容自动更新：
-
+```
+   
+此时订阅的窗口内容自动更新：
+   
    ```sql
    Reading messages... (press Ctrl-C to quit)
    1) "subscribe"
    2) "redisChat"
    3) (integer) 1
    1) "message"
-   2) "redisChat"
+2) "redisChat"
    3) "redis is a great caching technique"
-   ```
-
+```
    
-
-   ### 
-
+   
+   
    - Transactions(事务)
 
     
 
    > 谁说NoSQL都不支持事务，虽然Redis的Transactions提供的并不是严格的ACID的事务（比如一串用EXEC提交执行的命令，在执行中服务器宕机，那么会有一部分命令执行了，剩下的没执行），但是这个Transactions还是提供了基本的命令打包执行的功能（在服务器不出问题的情况下，可以保证一连串的命令是顺序在一起执行的，中间有会有其它客户端命令插进来执行）。Redis还提供了一个Watch功能，你可以对一个key进行Watch，然后再执行Transactions，在这过程中，如果这个Watched的值进行了修改，那么这个Transactions会发现并拒绝执行。
-
+   
    ```sql
    localhost:6379> multi   -- 开启事务
    OK
@@ -581,50 +563,50 @@ Redis 是一种基于键值对的NoSQL数据库,它提供了对多种数据类�
    QUEUED
    localhost:6379> get book-name -- 得到数据
    QUEUED
-   localhost:6379> sadd tag "C++" "Programming" "Mastering Series"  -- 创建集合，并添加数据
+localhost:6379> sadd tag "C++" "Programming" "Mastering Series"  -- 创建集合，并添加数据
    QUEUED
-   localhost:6379> smembers tag  -- 得到集合中的数据
+localhost:6379> smembers tag  -- 得到集合中的数据
    QUEUED
-   localhost:6379> exec  -- 执行操作
+localhost:6379> exec  -- 执行操作
    1) OK
-   2) "Mastering C++ in 21 day"
+2) "Mastering C++ in 21 day"
    3) (integer) 3
-   4) 1) "C++"
+4) 1) "C++"
       2) "Mastering Series"
-      3) "Programming"
+   3) "Programming"
    localhost:6379> 
    ```
-
    
-
+   
+   
    ## MongoDB
-
+   
    ### 简介
-
+   
    + MongoDB 是由C++语言编写的，是一个基于分布式文件存储的开源数据库系统。
-
+   
    + 在高负载的情况下，添加更多的节点，可以保证服务器性能。
-
+   
    + MongoDB 旨在为WEB应用提供可扩展的高性能数据存储解决方案。
-
+   
    + MongoDB 将数据存储为一个文档，数据结构由键值(key=>value)对组成。
    + MongoDB 文档类似于 JSON 对象。字段值可以包含其他文档，数组及文档数组
-
+   
    ### 主要特点
-
-   - MongoDB 是一个面向文档存储的数据库，操作起来比较简单和容易。
+   
+- MongoDB 是一个面向文档存储的数据库，操作起来比较简单和容易。
    - 你可以在MongoDB记录中设置任何属性的索引 (如：FirstName="Sameer",Address="8 Gandhi Road")来实现更快的排序。
-   - 你可以通过本地或者网络创建数据镜像，这使得MongoDB有更强的扩展性。
+- 你可以通过本地或者网络创建数据镜像，这使得MongoDB有更强的扩展性。
    - 如果负载的增加（需要更多的存储空间和更强的处理能力） ，它可以分布在计算机网络中的其他节点上这就是所谓的分片。
-   - Mongo支持丰富的查询表达式。查询指令使用JSON形式的标记，可轻易查询文档中内嵌的对象及数组。
+- Mongo支持丰富的查询表达式。查询指令使用JSON形式的标记，可轻易查询文档中内嵌的对象及数组。
    - MongoDb 使用update()命令可以实现替换完成的文档（数据）或者一些指定的数据字段 。
-   - Mongodb中的Map/reduce主要是用来对数据进行批量处理和聚合操作。
+- Mongodb中的Map/reduce主要是用来对数据进行批量处理和聚合操作。
    - Map和Reduce。Map函数调用emit(key,value)遍历集合中所有的记录，将key与value传给Reduce函数进行处理。
-   - Map函数和Reduce函数是使用Javascript编写的，并可以通过db.runCommand或mapreduce命令来执行MapReduce操作。
+- Map函数和Reduce函数是使用Javascript编写的，并可以通过db.runCommand或mapreduce命令来执行MapReduce操作。
    - GridFS是MongoDB中的一个内置功能，可以用于存放大量小文件。
-   - MongoDB允许在服务端执行脚本，可以用Javascript编写某个函数，直接在服务端执行，也可以把函数的定义存储在服务端，下次直接调用即可。
+- MongoDB允许在服务端执行脚本，可以用Javascript编写某个函数，直接在服务端执行，也可以把函数的定义存储在服务端，下次直接调用即可。
    - MongoDB支持各种编程语言:RUBY，PYTHON，JAVA，C++，PHP，C#等多种语言。
-   - MongoDB安装简单。
+- MongoDB安装简单。
 
 ### 安装
 
@@ -931,13 +913,23 @@ mongodb
     #! /bin/sh
   Out[9]: {'n': 3, 'ok': 1.0}
   
+  In[10]:db.students.find().count()
+  /usr/bin/ipython:1: DeprecationWarning: count is deprecated. Use Collection.count_documents instead.
+    #! /bin/sh
+  Out[10]: 0
+  
+  In[12]:coll = db.students
+  
+  In[13]:from pymongo import ASCENDING
+  
+  In[15]:coll.create_index([('name', ASCENDING)], unique=True)
+  
   In [16]:coll.insert_one({'stu_id': int(1001), 'stu_name': '张三', 'gender': True}  # 插入单个元素
   
-  In [17]:coll.insert_many([{'stu_id': int(1002), 'stu_name': '李四', 'gender': False},
-  {'stu_id': int(1003), 'stu_name': '王五', 'gender': True}])  # 插入多个元素
+  In [17]:coll.insert_many([{'stu_id': int(1002), 'stu_name': '李四', 'gender': False},{'stu_id': int(1003), 'stu_name': '王五', 'gender': True}])  # 插入多个元素
   In [18]:for student in db.students.find():
      ...:     print('学号:',student['stu_id'])
-     ...:     print('姓名：',student['stu_name'])
+   ...:     print('姓名：',student['stu_name'])
      ...:     print('性别：','男' if student['gender'] else '女' )
      ...:     
   学号: 1001
@@ -947,6 +939,12 @@ mongodb
   姓名： 王五
   性别： 男
   ```
-
   
+  ### 学习方法
+  
+  通过官方文档：`https://api.mongodb.com/python/current/tutorial.html`
+  
+  通过`MongoEngine`:`https://pypi.org/project/mongoengine/`，一个操作相对简化的库
+  
+  通过异步I/O方式访问`Mongodb`的第三方库motor：`https://pypi.org/project/motor/`
 
