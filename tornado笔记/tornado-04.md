@@ -894,7 +894,7 @@ mongodb
 + 安装
 
   ```bash
-  
+  pip install mongodb
   ```
 
 + 操作
