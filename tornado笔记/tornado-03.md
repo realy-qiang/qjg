@@ -76,7 +76,11 @@ qjg at python in 0910  日 9月 15   20:25:55
 (.venv) 
 ```
 
+### 虚拟环境迁移
 
+迁出：`pip freeze > requirement.txt`
+
+迁入：`pip install -r requirement.txt`
 
 ### 退出虚拟环境
 
