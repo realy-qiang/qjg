@@ -8,11 +8,19 @@ WebSocket协议支持Web浏览器（或其他客户端应用程序）与Web服�
 
 大多数浏览器都支持该协议，包括Google Chrome、Firefox、Safari、Microsoft Edge、Internet Explorer和Opera。
 
-与HTTP不同，WebSocket提供全双工通信。此外，WebSocket还可以在TCP之上启用消息流。TCP单独处理字节流，没有固有的消息概念。 在WebSocket之前，使用Comet可以实现全双工通信。但是Comet存在TCP握手和HTTP头的开销，因此对于小消息来说效率很低。WebSocket协议旨在解决这些问题。
+与HTTP不同，WebSocket提供**`全双工`**通信。此外，WebSocket还可以在TCP之上启用消息流。TCP单独处理字节流，没有固有的消息概念。 在WebSocket之前，使用Comet可以实现全双工通信。但是Comet存在TCP握手和HTTP头的开销，因此对于小消息来说效率很低。WebSocket协议旨在解决这些问题。
 
 WebSocket协议规范将`ws`（WebSocket）和`wss`（WebSocket Secure）定义为两个新的统一资源标识符（URL）方案，分别对应明文和加密连接。除了方案名称和片段ID（不支持`#`）之外，其余的URI组件都被定义为此URI的通用语法。
 
 使用浏览器开发人员工具，开发人员可以检查WebSocket握手以及WebSocket框架。
+
+### 全双工
+
+通信允许数据在两个方向上同时传输，它在能力上相当于两个单工通信方式的结合。全双工指可以同时（瞬时）进行信号的双向传输（A→B且B→A）。指A→B的同时B→A，是瞬时同步的。
+
+### 半双工
+
+半双工就是指一个时间段内只有一个动作发生，举个简单例子，一条窄窄的马路，同时只能有一辆车通过，当目前有两辆车对开，这种情况下就只能一辆先过，等到头儿后另一辆再开
 
 ### Web上的即时通信
 
