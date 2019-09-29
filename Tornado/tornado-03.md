@@ -68,7 +68,7 @@ done.
 
 激活虚拟环境
 
-`source ~/项目目文文件夹/.venv/bin/activate`
+`source ~/项目文件夹/.venv/bin/activate`
 
 ```bash
 qjg at python in 0910  日 9月 15   20:25:55 

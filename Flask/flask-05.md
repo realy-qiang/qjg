@@ -293,14 +293,13 @@ def addCollection():
 - ext中初始化
   `Bootstrap（app=app）`
     	
-  bootstrap案例--bootstrap模板   {% extends ‘bootstrap/base.html’%}
-
+  bootstrap案例--bootstrap模板   \{% extends 'bootstrap/base.html %\}
 ```python
 # flask-bootstrap
 @blue.route('/bootstrapDemo/')
 def bootstrapDemo():
-    page = int(request.args.get('page', 1))
-    per_page = request.args.get('per_page', 4)
+    page = int(request.args.get('page', \1))
+    per_page = request.args.get('per_page', 4\)
 
     pagination = Movie1.query.paginate(page=page, per_page=per_page)
     print(type(pagination.items))

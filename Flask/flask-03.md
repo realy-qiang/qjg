@@ -348,8 +348,9 @@ def testmacro():
 
 #### 过滤器
 
-- {{ 变量名|过滤器|过滤器 }}
-- 过滤器没有数量限定,可以进行无限次过滤
+-\{\{ 变量名\|过滤器\|过滤器 \}\}
+
+- 滤器没有数量限定,可以进行无限次过滤
 - lower:将所有字母改为小写
 - upper:将所有字母改为大写
 - title:首字母大写
@@ -429,7 +430,7 @@ def testmacro():
 
   - 3、创建SQLALCHEMY对象
 
-    - 第一种方式：db=SQLAlcheny(app=app)
+    - 第一种方式：db=SQLAlcheny\(app=app)
     - 第二种方式：
 
     ```
@@ -437,7 +438,7 @@ def testmacro():
     db.init_app(app=app)  # 这句话在init中
     ```
 
-  - 执行view中db.create_all()
+  - 执行view中db.create_all\()
 
     注意：必须添加主键，primary_key=True,自增：autoincrement=True
 
@@ -449,9 +450,9 @@ def testmacro():
     - 继承Sqlalchemy对象中红的model
   - 定义字段
     - 主键：一定要添加
-    - 字段语法：db.Column(db.类型()，约束)，如果类型有长度一定要进行指定
-  - 创建：db.create_all()
-  - 删除：db.drop_all()
+    - 字段语法：db.Column\(db.类型()，约束)，如果类型有长度一定要进行指定
+  - 创建：db.create_all\()
+  - 删除：db.drop_all\()
   - 修改表名：\_\_tablename\_\_="表名"
   - 添加数据：创建对象,字段赋值，添加：db.session.add()，提交：db.session.commit()
   - 查询数据：类名.query.all()，得到一个所有字段的列表
