@@ -533,7 +533,222 @@ def logoutSession(request):
     return response
 ```
 
+### token
+
+基本概念：Token中文意思是"令牌"，主要用来身份验证，Facebook，Twitter，Google+，Github等大型网站都在使用。比起传统的身份验证方法，Token扩展性强，安全性高的特点，非常适合用在Web应用或者移动应用上，如果使用在移动端或者客户端开发中，通常以Json形式传输，服务端会话技术，自定义的Session，给他一个不能重复的字符串，数据存储在服务器中
+
+验证方法：使用基于Token的身份验证方法，在服务器不需要存储用户的登录记录，大概的流程是这样的：
+
+1. 客户端使用用户名和密码登录
+2. 服务端收到请求，取验证用户名和密码
+3. 验证成功之后，服务端会签发一个Token，再把这个Token发送给客户端
+4. 客户端收到Token以后可以把它存储在cookie或者Local Storage里
+5. 当再次向服务器请求资源时，需要携带服务端签发的Token
+6. 服务端收到请求后验证客户端的携带的Token，如果验证成功，就向客户端返回数据
+
+常用的Token生成方法，也就是常用的加密算法：
+
+1. binascii_b2a_base64(os.urandom(24)[:-1])
+
+   ```python
+   import binascii
+   import os
+   
+   print(binascii.b2a_base64(os.urandom(24))[:-1])  # b'Wa/tjrXGRG9wNimFaJI4bS7IDMlHsRW9'
+   ```
+
+   
+
+   总结：优点是应能快，缺点有特殊字符，需要加replace来进行处理
+
+2. sha1(os.urandom(24).hexdigest())
+
+   ```python
+   import hashlib
+   import os
+   print(hashlib.sha1(os.urandom(24)).hexdigest())  # 098d4523f478486b0f886bc1500a3854aa18b0f0
+   ```
+
+   
+
+   总结：优点是安全，不需要做特殊处理，缺点是覆盖范围差一些
+
+3. uuid4().hex
+
+   ```python
+   import uuid
+   
+   print(uuid.uuid4().hex)   # 923b4a2cf7e94702bc5faae538e19692
+   ```
+
+   
+
+   总结：uuid使用起来比较方便，缺点是安全性略差一些
+
+4. base64.b32encode(os.ursndom(24))或者base64.b64encode(os,urandom(24))
+
+   ```python
+   import os
+   import base64
+   print(base64.b32encode(os.urandom(20)))  # b'MY6R3XZ2JIPV4DXKC22UEQD2SNJIBXGI'
+   
+   
+   print(base64.b64encode(os.urandom(24)))  # b'wiK2Qb8EB07zX+OTK95IUtsMgm76LphY'
+   ```
+
+总结：可以用到base64的地方，选择binascii_base64是不错的选择
+
+根据W3的SessionID的字符串中对identifier的定义，SessionID中使用的是base64，但是在cookie的值内使用需要注意'='这个特殊字符
+
+如果需要安全字符串(字母和数字)，SHA1也是一个不错的选择，性能也不错
+
+Token实现：
+
+```python
+from django.test import TestCase
+
+# Create your tests here.
+# import binascii
+# import os
+#
+# print(binascii.b2a_base64(os.urandom(24))[:-1])
+
+# import hashlib
+# import os
+# print(hashlib.sha1(os.urandom(24)).hexdigest())
+
+# import uuid
+#
+# print(uuid.uuid4().hex)
+
+# import os
+# import base64
+# print(base64.b32encode(os.urandom(20)))
+#
+# print(base64.b64encode(os.urandom(24)))
+
+import hashlib
+import time
+import base64
+import hmac
+
+# 待加密内容
+strdata = "qiangjiangang"
+
+h1 = hashlib.md5()
+h1.update(strdata.encode(encoding='utf-8'))
+
+strdata_tomd5 = h1.hexdigest()
+
+print("原始内容：", strdata, ",加密后：", strdata_tomd5)
+
+
+# 生产token
+def generate_token(key, expire=3600):
+    r'''''
+        @Args:
+            key: str (用户给定的key，需要用户保存以便之后验证token,每次产生token时的key 都可以是同一个key)
+            expire: int(最大有效时间，单位为s)
+        @Return:
+            state: str
+    '''
+    ts_str = str(time.time() + expire)
+    ts_byte = ts_str.encode("utf-8")
+    sha1_tshexstr = hmac.new(key.encode("utf-8"), ts_byte, 'sha1').hexdigest()
+    token = ts_str + ':' + sha1_tshexstr
+    b64_token = base64.urlsafe_b64encode(token.encode("utf-8"))
+    return b64_token.decode("utf-8")
+
+
+# 验证token
+def certify_token(key, token):
+    r'''''
+        @Args:
+            key: str
+            token: str
+        @Returns:
+            boolean
+    '''
+    token_str = base64.urlsafe_b64decode(token).decode('utf-8')
+    token_list = token_str.split(':')
+    if len(token_list) != 2:
+        return False
+    ts_str = token_list[0]
+    if float(ts_str) < time.time():
+        # token expired
+        return False
+    known_sha1_tsstr = token_list[1]
+    sha1 = hmac.new(key.encode("utf-8"), ts_str.encode('utf-8'), 'sha1')
+    calc_sha1_tsstr = sha1.hexdigest()
+    if calc_sha1_tsstr != known_sha1_tsstr:
+        # token certification failed
+        return False
+        # token certification success
+    return True
+
+
+key = "qiangjiangang"
+print("key：", key)
+user_token = generate_token(key=key)
+
+print("加密后：", user_token)
+user_de = certify_token(key=key, token=user_token)
+print("验证结果：", user_de)
+
+key = "jiangang"
+user_de = certify_token(key=key, token=user_token)
+print("验证结果：", user_de)
+```
+
+### cookie和session的区别
+
+1. cookie保存在客户端，session保存在服务端
+2. cookie因为会保存在浏览器中，所以可以利用浏览器中的cookie进行cookie欺骗，为了安全性，应该选择session
+3. session保存在服务端，当访问量增加时，会对服务器性能造成影响，为了减小服务器的压力，可以选择cookie
+
+### session 和Token的区别
+
+1. 同样是身份验证，Token相对session来说要更加安全一些，因为每个请求都有签名还能防止窃听和重放攻击
+2. session是一种HTTP存储机制，目的是为了无状态的HTTP提供持久机制，Session认证只是简单的把User信息存储到Session里，因为SID的不可预测性，暂时认为是安全的，这是一种认证手段，但是如果有人得到了某User的SID，那么就相当于拥有了该User的所有权限，SID不应该共享给其他网站或者第三方
+3. Token，如果是OAuth Token或者类似机制，提供的是认证和授权，认证是针对用户，授权是针对APP，其目的是让某APP拥有访问某用户的信息的权利，这里的Token是唯一的，不可以转移到其他APP上，也不可以转到其他用户上
+
+### CSRF豁免
 
 
 
+CSRF：防跨站攻击
+
+实现机制
+
+页面中存在{% csrf_token %}时
+
+在渲染的时候，会向response中添加csrftoken的cookie
+
+在提交的时候，会添加请求体中，会被验证有效性
+
+解决CSRF的问题/csrf豁免：
+
+1. 注释中间件：setting.py===》MIDDLEWARE ===》'django.middleware.csrf.CsrfViewMiddleware'
+
+2. 在表单中添加{% csrf_token %}
+
+   ```html
+   <form action="{% url 'token:login' %}" method="post">
+       {% csrf_token %}
+       <button>登录</button>
+   </form>
+   ```
+
+3. 在方法中添加@csrf_exempt
+
+   ```python
+   def toLogin(request):
+       return render(request, 'login.html')
+   
+   @csrf_exempt
+   def login(request):
+       return HttpResponse('明天我们放假了')
+   ```
+
+   
 
